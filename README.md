@@ -84,7 +84,7 @@ Segmentation uses purchasing users only:
 ## Dashboard
 
 ```bash
-streamlit run dashboard/app.py
+python -m streamlit run dashboard/app.py
 ```
 
 The dashboard reads generated DuckDB summary tables and does not scan raw CSV files.

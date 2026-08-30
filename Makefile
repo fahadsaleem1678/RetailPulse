@@ -29,4 +29,5 @@ export:
 	$(PYTHON) scripts/export_metric_tables.py
 
 dashboard:
-	streamlit run dashboard/app.py
+	$(PYTHON) -m streamlit run dashboard/app.py
+
