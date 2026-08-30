@@ -31,7 +31,8 @@ session_rollup AS (
         sum(CASE WHEN event_type = 'cart' THEN 1 ELSE 0 END) AS cart_count,
         sum(CASE WHEN event_type = 'remove_from_cart' THEN 1 ELSE 0 END) AS remove_from_cart_count,
         sum(CASE WHEN event_type = 'purchase' THEN 1 ELSE 0 END) AS purchase_count,
-        sum(CASE WHEN event_type = 'purchase' THEN coalesce(price, 0) ELSE 0 END) AS purchase_revenue,
+        sum(CASE WHEN event_type = 'purchase' AND has_invalid_price THEN 1 ELSE 0 END) AS invalid_purchase_count,
+        sum(CASE WHEN event_type = 'purchase' AND NOT has_invalid_price THEN coalesce(price, 0) ELSE 0 END) AS purchase_revenue,
         max(CASE WHEN event_type = 'view' THEN 1 ELSE 0 END) = 1 AS had_view,
         max(CASE WHEN event_type = 'cart' THEN 1 ELSE 0 END) = 1 AS had_cart,
         max(CASE WHEN event_type = 'remove_from_cart' THEN 1 ELSE 0 END) = 1 AS had_remove_from_cart,
@@ -57,7 +58,7 @@ CREATE OR REPLACE TABLE mart_session_reconciliation AS
 SELECT
     (SELECT count(DISTINCT user_session) FROM stg_events WHERE user_session IS NOT NULL) AS staged_session_count,
     (SELECT count(*) FROM mart_sessions) AS mart_session_count,
-    (SELECT count(DISTINCT user_session) FROM stg_events WHERE user_session IS NULL) AS missing_session_groups,
+    (SELECT count(*) FROM stg_events WHERE user_session IS NULL) AS missing_session_rows,
     (SELECT count(*) FROM mart_sessions WHERE session_started_at > session_ended_at) AS sessions_with_reversed_time,
     (SELECT count(*) FROM mart_sessions WHERE had_purchase <> (purchase_count > 0)) AS purchase_flag_mismatches;
 
@@ -70,7 +71,7 @@ SELECT
 FROM (
     SELECT
         user_session,
-        sum(CASE WHEN event_type = 'purchase' THEN coalesce(price, 0) ELSE 0 END) AS purchase_revenue_from_events
+        sum(CASE WHEN event_type = 'purchase' AND NOT has_invalid_price THEN coalesce(price, 0) ELSE 0 END) AS purchase_revenue_from_events
     FROM stg_events
     WHERE user_session IS NOT NULL
     GROUP BY user_session
@@ -87,5 +88,7 @@ SELECT
     sum(CASE WHEN had_view AND had_cart AND had_purchase THEN 1 ELSE 0 END) AS reached_purchase_after_cart_sessions,
     sum(CASE WHEN had_purchase THEN 1 ELSE 0 END) AS purchased_sessions,
     sum(purchase_count) AS purchase_events,
-    sum(purchase_revenue) AS purchase_revenue
+    sum(invalid_purchase_count) AS invalid_purchase_events,
+    sum(purchase_revenue) AS valid_purchase_revenue
 FROM mart_sessions;
+

@@ -24,7 +24,8 @@ python scripts/run_duckdb_sql.py sql/04_session_mart.sql
 | `cart_count` | Count of cart events. |
 | `remove_from_cart_count` | Count of remove-from-cart events. |
 | `purchase_count` | Count of purchase event rows. |
-| `purchase_revenue` | Sum of purchase event prices. |
+| `invalid_purchase_count` | Count of purchase rows with invalid prices. |
+| `purchase_revenue` | Sum of valid non-negative purchase event prices. |
 | `had_view` | Session had at least one view event. |
 | `had_cart` | Session had at least one cart event. |
 | `had_remove_from_cart` | Session had at least one remove-from-cart event. |
@@ -40,7 +41,7 @@ python scripts/run_duckdb_sql.py sql/04_session_mart.sql
 
 - Funnel conversion: one session with `had_purchase = true`.
 - Purchase count: all purchase event rows in `purchase_count`.
-- Revenue: sum all purchase event prices in `purchase_revenue`.
+- Revenue: sum valid non-negative purchase event prices in `purchase_revenue`; invalid purchase rows remain counted in `invalid_purchase_count`.
 
 ## Generated Validation Tables
 
@@ -48,6 +49,30 @@ python scripts/run_duckdb_sql.py sql/04_session_mart.sql
 - `mart_session_revenue_reconciliation`
 - `mart_session_funnel_counts`
 
+
+## Validation Results
+
+| Check | Result |
+| --- | ---: |
+| Distinct staged sessions | 4,535,941 |
+| Session mart rows | 4,535,941 |
+| Missing session rows excluded from mart | 4,598 |
+| Sessions with reversed time | 0 |
+| Purchase flag mismatches | 0 |
+| Revenue reconciliation mismatch rows | 0 |
+
+## Funnel Stage Counts
+
+| Metric | Sessions / Events |
+| --- | ---: |
+| Total sessions | 4,535,941 |
+| Reached view sessions | 4,280,701 |
+| Reached cart after view sessions | 788,430 |
+| Reached purchase after cart sessions | 106,526 |
+| Purchased sessions | 155,617 |
+| Purchase events | 1,287,007 |
+| Invalid purchase events excluded from revenue | 126 |
+| Valid purchase revenue | $6,351,830.29 |
 ## Phase 4 Gate
 
 After raw data is loaded and staged, confirm that:
@@ -58,4 +83,5 @@ After raw data is loaded and staged, confirm that:
 - `mart_session_revenue_reconciliation` has zero rows.
 - In `mart_session_funnel_counts`, `reached_view_sessions >= reached_cart_after_view_sessions >= reached_purchase_after_cart_sessions`.
 
-Counts are pending until the Kaggle CSV files are downloaded, ingested, and staged locally.
+Counts were validated after loading the five-month local archive.
+
