@@ -1,4 +1,5 @@
 # Local data and generated warehouse artifacts
+data/archive.zip
 data/raw/
 data/warehouse/
 data/processed/
@@ -15,3 +16,4 @@ venv/
 # OS/editor noise
 .DS_Store
 Thumbs.db
+

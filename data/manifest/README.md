@@ -7,4 +7,5 @@ python scripts/profile_raw_cosmetics.py
 ```
 
 The generated CSV is intentionally small enough to commit after raw files are profiled.
-Raw Kaggle CSV files stay under `data/raw/cosmetics/` and are ignored by git.
+The local `data/archive.zip` and extracted Kaggle CSV files stay ignored by git. Raw CSV files are prepared under `data/raw/cosmetics/`.
+

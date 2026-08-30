@@ -22,7 +22,7 @@ Expected raw columns:
 - `user_id`
 - `user_session`
 
-Raw data is intentionally not committed. Put Kaggle CSV files under `data/raw/cosmetics/`.
+Raw data is intentionally not committed. This workspace can use `data/archive.zip` as the local Kaggle archive and extract the CSV files to `data/raw/cosmetics/`.
 
 ## Setup
 
@@ -30,7 +30,7 @@ Raw data is intentionally not committed. Put Kaggle CSV files under `data/raw/co
 python -m pip install -r requirements.txt
 ```
 
-Kaggle credentials must be configured before downloading the data.
+The acquisition script first looks for `data/archive.zip`. If that file is absent, Kaggle credentials must be configured so it can download the dataset with `kagglehub`.
 
 ## Pipeline
 
@@ -99,3 +99,4 @@ Start here after the metrics are generated:
 ## Scope Boundaries
 
 Version 1 does not include streaming, multi-dataset joins, predictive ML, or production warehouse orchestration.
+
