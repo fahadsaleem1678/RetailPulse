@@ -1,0 +1,6 @@
+file_name,source,file_size_bytes,sha256,row_count,min_event_time,max_event_time,distinct_users,distinct_sessions,duplicate_rows
+2019-Dec.csv,https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop,415302972,ebf98f504e238109efa406d26a26a90e0d467faa938bf96b68e3fea663d2008e,3533286,2019-12-01 00:00:00,2019-12-31 23:59:57,370154,839812,183860
+2019-Nov.csv,https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop,545839412,25b03eea9020a64f97659a4cbce9d801ca81872910ce72348bfa607817539755,4635837,2019-11-01 00:00:02,2019-11-30 23:59:58,368232,942022,246693
+2019-Oct.csv,https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop,482542278,d87b1124a003151592e722996c6295aba2d286626c5db624c49d749877478c23,4102283,2019-10-01 00:00:00,2019-10-31 23:59:54,399664,873960,213155
+2020-Feb.csv,https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop,488799986,605c76fd75b01b9b60d1ae5f412d2a774158fdd18e0a95377b3c547a556f1c1b,4156682,2020-02-01 00:00:01,2020-02-29 23:59:59,391055,931668,240290
+2020-Jan.csv,https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop,501792804,c6d8d6bdcf0b6bccb61a14447afdca08e95683f34f279befb1ac580ddc214853,4264752,2020-01-01 00:00:00,2020-01-31 23:59:58,410073,965351,225100
