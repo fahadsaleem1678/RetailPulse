@@ -66,7 +66,7 @@ Funnel metrics are session-level:
 - Cart stage: sessions with both view and cart events.
 - Purchase stage: sessions with view, cart, and purchase events.
 - Multiple purchase rows in one session count as one converted session for funnel conversion.
-- Revenue sums all purchase event prices.
+- Revenue sums valid non-negative purchase event prices; invalid purchase rows are counted separately in quality/session outputs.
 
 Cohort metrics are user-month based:
 

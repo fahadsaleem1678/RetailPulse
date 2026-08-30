@@ -109,7 +109,7 @@ SELECT
     count(*) AS events,
     count(DISTINCT user_session) AS sessions,
     sum(CASE WHEN event_type = 'purchase' THEN 1 ELSE 0 END) AS purchase_events,
-    sum(CASE WHEN event_type = 'purchase' THEN coalesce(price, 0) ELSE 0 END) AS purchase_revenue
+    sum(CASE WHEN event_type = 'purchase' AND NOT has_invalid_price THEN coalesce(price, 0) ELSE 0 END) AS purchase_revenue
 FROM stg_events
 WHERE user_id IS NOT NULL
 GROUP BY user_id, event_month;
@@ -193,6 +193,7 @@ WITH purchase_users AS (
     FROM stg_events
     WHERE event_type = 'purchase'
       AND user_id IS NOT NULL
+      AND NOT has_invalid_price
     GROUP BY user_id
 ),
 analysis_date AS (
@@ -239,6 +240,7 @@ ORDER BY purchase_revenue DESC;
 
 CREATE OR REPLACE TABLE metric_revenue_reconciliation AS
 SELECT
-    (SELECT sum(CASE WHEN event_type = 'purchase' THEN coalesce(price, 0) ELSE 0 END) FROM stg_events) AS event_purchase_revenue,
+    (SELECT sum(CASE WHEN event_type = 'purchase' AND NOT has_invalid_price THEN coalesce(price, 0) ELSE 0 END) FROM stg_events) AS event_purchase_revenue,
     (SELECT sum(purchase_revenue) FROM mart_sessions) AS session_purchase_revenue,
     (SELECT sum(monetary_value) FROM mart_user_rfm_segments) AS user_rfm_purchase_revenue;
+
