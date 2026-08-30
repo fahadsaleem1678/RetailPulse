@@ -59,6 +59,7 @@ Default outputs:
 | `price` | double | Parsed product price. |
 | `user_id` | bigint | Parsed permanent user identifier. |
 | `user_session` | varchar | Blank strings normalized to null. |
+| `source_row_number` | bigint | Row number within the source file scan for deterministic ordering. |
 | `source_file` | varchar | Source CSV file name. |
 
 ## Phase 2 Gate
@@ -75,3 +76,5 @@ Run the validation SQL after ingestion:
 ```bash
 duckdb data/warehouse/retailpulse.duckdb -c ".read sql/02_ingestion_validation.sql"
 ```
+
+

@@ -111,6 +111,7 @@ def create_tables(con) -> None:
             price DOUBLE,
             user_id BIGINT,
             user_session VARCHAR,
+            source_row_number BIGINT,
             source_file VARCHAR
         )
         """
@@ -164,6 +165,7 @@ def insert_file(con, path: Path, load_id: str, loaded_at: datetime) -> None:
             try_cast(price AS DOUBLE) AS price,
             try_cast(user_id AS BIGINT) AS user_id,
             nullif(trim(user_session), '') AS user_session,
+            row_number() OVER () AS source_row_number,
             ? AS source_file
         FROM {relation}
         """,
@@ -236,3 +238,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
