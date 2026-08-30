@@ -10,6 +10,8 @@ Three findings stand out:
 - Repeat purchase retention was strongest for the October 2019 first-purchase cohort at 18.49% in month 1, then fell below 10% for later cohorts.
 - Revenue is concentrated in prior buyers: `at_risk_previous_buyer` users produced 43.77% of valid purchase revenue, while the much smaller `high_value_loyal` segment produced 24.10%.
 
+![RetailPulse funnel dashboard](images/dashboard-funnel.png)
+
 ## Dataset and Scope
 
 Source: [eCommerce Events History in Cosmetics Shop](https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop)
@@ -67,6 +69,8 @@ Interpretation: The earliest purchase cohort was materially more likely to buy a
 
 Recommendation: Build a retention view focused on first 30 days after purchase: replenishment reminders, personalized follow-up for high-interest categories, and win-back offers for users who return to browse but do not repurchase.
 
+![RetailPulse cohort dashboard](images/dashboard-cohorts.png)
+
 ## Finding 3: Revenue Is Concentrated in Prior Buyers
 
 Business question: Which purchasing customer segments contribute the most revenue and repeat behavior?
@@ -78,6 +82,8 @@ Metric result: `at_risk_previous_buyer` users account for 60,921 users and $2,77
 Interpretation: A large share of revenue sits with users who bought before but have not purchased recently. The loyal segment is small but economically powerful, with much higher average monetary value.
 
 Recommendation: Treat prior buyers as the highest-leverage audience. Create separate CRM plays for `at_risk_previous_buyer` users and `high_value_loyal` users: reactivation for the former, early access or replenishment-oriented offers for the latter.
+
+![RetailPulse segment dashboard](images/dashboard-segments.png)
 
 ## Caveats
 
@@ -101,4 +107,5 @@ python scripts/run_duckdb_sql.py sql/03_staging_quality.sql
 python scripts/run_duckdb_sql.py sql/04_session_mart.sql
 python scripts/run_duckdb_sql.py analysis/core_metrics.sql
 python scripts/export_metric_tables.py
+python -m streamlit run dashboard/app.py
 ```

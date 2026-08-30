@@ -11,6 +11,8 @@ python scripts/run_duckdb_sql.py sql/04_session_mart.sql
 python scripts/run_duckdb_sql.py analysis/core_metrics.sql
 ```
 
+Start the dashboard after the pipeline has finished. Close the Streamlit dashboard before rerunning pipeline steps that write to DuckDB; DuckDB allows one writer at a time.
+
 Start the dashboard:
 
 ```bash
@@ -34,6 +36,7 @@ RETAILPULSE_DUCKDB=data/warehouse/retailpulse.duckdb python -m streamlit run das
 - Dashboard server started successfully with `python -m streamlit run dashboard/app.py --server.headless true --server.port 8501`.
 - Local health check returned HTTP 200 from `http://localhost:8501`.
 - Dashboard reads from generated DuckDB metric tables; raw CSVs are not scanned at dashboard runtime.
+- Portfolio screenshots were captured under `case-study/images/` for funnel, cohort, and segment views.
 
 ## Phase 7 Gate
 

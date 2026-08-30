@@ -27,6 +27,19 @@ def require_duckdb():
     return duckdb
 
 
+def connect_for_write(duckdb, database: Path):
+    try:
+        return duckdb.connect(str(database))
+    except duckdb.IOException as exc:
+        message = str(exc)
+        if "being used by another process" in message or "Conflicting lock" in message:
+            raise SystemExit(
+                f"DuckDB database is locked at {database}. Close the Streamlit dashboard "
+                "or any other DuckDB connection, then rerun this command."
+            ) from exc
+        raise
+
+
 def main() -> None:
     args = parse_args()
     if not args.database.exists():
@@ -38,9 +51,12 @@ def main() -> None:
 
     duckdb = require_duckdb()
     sql = args.sql_file.read_text(encoding="utf-8")
-    con = duckdb.connect(str(args.database))
-    con.execute(sql)
-    print(f"Ran {args.sql_file} against {args.database}")
+    con = connect_for_write(duckdb, args.database)
+    try:
+        con.execute(sql)
+        print(f"Ran {args.sql_file} against {args.database}")
+    finally:
+        con.close()
 
 
 if __name__ == "__main__":

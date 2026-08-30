@@ -6,6 +6,23 @@ RetailPulse is a product analytics portfolio project built around cosmetics ecom
 2. Which first-activity or first-purchase cohorts retain or repurchase?
 3. Which brands, categories, and purchasing-user segments convert best?
 
+
+## Results Snapshot
+
+The completed five-month run produced these headline results:
+
+| Metric | Value |
+| --- | ---: |
+| Raw events profiled | 20,692,840 |
+| Reconstructed sessions | 4,535,941 |
+| Valid purchase revenue | $6,351,830.29 |
+| View-to-cart rate | 18.42% |
+| Cart-to-purchase rate | 13.51% |
+| View-to-purchase rate | 2.49% |
+| Month-1 purchase retention, October 2019 cohort | 18.49% |
+| Revenue share from `at_risk_previous_buyer` | 43.77% |
+
+Read the finished case study in `case-study/ecommerce-product-analytics-case-study.md`.
 ## Dataset
 
 Source: [eCommerce Events History in Cosmetics Shop](https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop), provided by REES46 Marketing Platform.
@@ -51,6 +68,8 @@ make pipeline
 make export
 ```
 
+Close the Streamlit dashboard before rerunning pipeline steps that write to DuckDB; DuckDB allows one writer at a time.
+
 Generated local artifacts:
 
 - `data/raw/cosmetics/` raw Kaggle CSV files, ignored by git.
@@ -95,6 +114,7 @@ Start here after the metrics are generated:
 
 - `case-study/ecommerce-product-analytics-case-study.md`
 - `docs/insight-synthesis.md`
+- `docs/data-dictionary.md`
 
 ## Scope Boundaries
 

@@ -19,6 +19,15 @@ DEFAULT_TABLES = [
     "metric_rfm_segment_summary",
     "metric_revenue_reconciliation",
 ]
+ORDER_BY = {
+    "metric_session_funnel_by_month": "session_month",
+    "metric_session_funnel_by_brand": "purchase_revenue DESC, viewed_sessions DESC, brand",
+    "metric_session_funnel_by_category": "purchase_revenue DESC, viewed_sessions DESC, category_code",
+    "metric_session_funnel_by_price_band": "entry_price_band",
+    "metric_activity_cohort_retention": "first_activity_month, activity_month",
+    "metric_purchase_cohort_retention": "first_purchase_month, purchase_month",
+    "metric_rfm_segment_summary": "purchase_revenue DESC, rfm_segment",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -40,8 +49,28 @@ def require_duckdb():
     return duckdb
 
 
+def connect_read_only(duckdb, database: Path):
+    try:
+        return duckdb.connect(str(database), read_only=True)
+    except duckdb.IOException as exc:
+        message = str(exc)
+        if "being used by another process" in message or "Conflicting lock" in message:
+            raise SystemExit(
+                f"DuckDB database is locked at {database}. Close the Streamlit dashboard "
+                "or any other DuckDB connection, then rerun this command."
+            ) from exc
+        raise
+
+
 def sql_path(path: Path) -> str:
     return path.as_posix().replace("'", "''")
+
+
+def export_query(table: str) -> str:
+    order_by = ORDER_BY.get(table)
+    if order_by is None:
+        return f"SELECT * FROM {table}"
+    return f"SELECT * FROM {table} ORDER BY {order_by}"
 
 
 def main() -> None:
@@ -52,19 +81,24 @@ def main() -> None:
         )
 
     duckdb = require_duckdb()
-    con = duckdb.connect(str(args.database), read_only=True)
-    existing_tables = {row[0] for row in con.execute("SHOW TABLES").fetchall()}
-    missing_tables = [table for table in args.tables if table not in existing_tables]
-    if missing_tables:
-        raise SystemExit(
-            "Metric tables are missing: " + ", ".join(missing_tables) + ". Run `python scripts/run_duckdb_sql.py analysis/core_metrics.sql`."
-        )
+    con = connect_read_only(duckdb, args.database)
+    try:
+        existing_tables = {row[0] for row in con.execute("SHOW TABLES").fetchall()}
+        missing_tables = [table for table in args.tables if table not in existing_tables]
+        if missing_tables:
+            raise SystemExit(
+                "Metric tables are missing: "
+                + ", ".join(missing_tables)
+                + ". Run `python scripts/run_duckdb_sql.py analysis/core_metrics.sql`."
+            )
 
-    args.export_dir.mkdir(parents=True, exist_ok=True)
-    for table in args.tables:
-        target = args.export_dir / f"{table}.csv"
-        con.execute(f"COPY {table} TO '{sql_path(target)}' (HEADER, DELIMITER ',')")
-        print(f"Exported {table} -> {target}")
+        args.export_dir.mkdir(parents=True, exist_ok=True)
+        for table in args.tables:
+            target = args.export_dir / f"{table}.csv"
+            con.execute(f"COPY ({export_query(table)}) TO '{sql_path(target)}' (HEADER, DELIMITER ',')")
+            print(f"Exported {table} -> {target}")
+    finally:
+        con.close()
 
 
 if __name__ == "__main__":
