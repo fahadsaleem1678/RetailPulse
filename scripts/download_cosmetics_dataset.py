@@ -39,7 +39,10 @@ def copy_csv(source_file: Path, target_file: Path, force: bool) -> None:
 def extract_archive(archive_path: Path, force: bool) -> None:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(archive_path) as archive:
-        csv_entries = sorted(entry for entry in archive.infolist() if entry.filename.lower().endswith(".csv"))
+        csv_entries = sorted(
+            (entry for entry in archive.infolist() if entry.filename.lower().endswith(".csv")),
+            key=lambda entry: entry.filename,
+        )
         if not csv_entries:
             raise SystemExit(f"No CSV files found in archive: {archive_path}")
 
@@ -88,3 +91,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+
