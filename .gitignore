@@ -1,0 +1,17 @@
+# Local data and generated warehouse artifacts
+data/raw/
+data/warehouse/
+data/processed/
+*.duckdb
+*.duckdb.wal
+
+# Python runtime noise
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
