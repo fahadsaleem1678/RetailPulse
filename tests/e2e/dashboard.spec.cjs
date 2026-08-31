@@ -1,0 +1,112 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawn } = require('node:child_process');
+
+function loadPlaywright() {
+  const candidates = [
+    process.env.PLAYWRIGHT_MODULE,
+    'playwright',
+    'C:/Users/user/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright',
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      return require(candidate);
+    } catch (error) {
+      if (error.code !== 'MODULE_NOT_FOUND') {
+        throw error;
+      }
+    }
+  }
+  throw new Error('Playwright is not available. Install it with `npm install -D playwright` or set PLAYWRIGHT_MODULE.');
+}
+
+function fileExists(filePath) {
+  return fs.existsSync(path.resolve(filePath));
+}
+
+async function waitForUrl(url, timeoutMs = 60000) {
+  const startedAt = Date.now();
+  let lastError;
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return;
+      }
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error(`Timed out waiting for ${url}: ${lastError?.message ?? 'no response'}`);
+}
+
+async function main() {
+  const python = process.env.PYTHON || 'python';
+  const port = process.env.E2E_PORT || '8502';
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const edgePath = process.env.EDGE_PATH || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
+
+  assert.ok(fileExists('dashboard/app.py'), 'dashboard/app.py should exist');
+  assert.ok(fileExists('data/warehouse/retailpulse.duckdb'), 'DuckDB warehouse should exist');
+  assert.ok(fileExists('data/exports/metric_session_funnel_overall.csv'), 'metric exports should exist');
+
+  const server = spawn(
+    python,
+    ['-m', 'streamlit', 'run', 'dashboard/app.py', '--server.headless', 'true', '--server.port', port],
+    { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+
+  let stdout = '';
+  let stderr = '';
+  server.stdout.on('data', (chunk) => {
+    stdout += chunk.toString();
+  });
+  server.stderr.on('data', (chunk) => {
+    stderr += chunk.toString();
+  });
+
+  try {
+    await waitForUrl(baseUrl);
+    const { chromium } = loadPlaywright();
+    const browser = await chromium.launch({ executablePath: edgePath, headless: true });
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 });
+
+    await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 60000 });
+    await page.getByText('RetailPulse', { exact: true }).waitFor({ timeout: 60000 });
+    await page.getByText('Cosmetics ecommerce product analytics').waitFor({ timeout: 60000 });
+    await page.getByText('Viewed sessions').waitFor({ timeout: 60000 });
+    await page.getByText('4,280,701').waitFor({ timeout: 60000 });
+    await page.getByText('18.42%').first().waitFor({ timeout: 60000 });
+    await page.getByText('$6,351,830').waitFor({ timeout: 60000 });
+    await page.getByText('Session funnel stage reach').waitFor({ timeout: 60000 });
+
+    await page.getByRole('tab', { name: 'Cohorts' }).click();
+    await page.getByText('Activity retention by first activity month').waitFor({ timeout: 60000 });
+    await page.getByText('Purchase retention by first purchase month').waitFor({ timeout: 60000 });
+
+    await page.getByRole('tab', { name: 'Segments' }).click();
+    await page.getByText('Revenue by purchasing-user segment').waitFor({ timeout: 60000 });
+    await page.getByText('at_risk_previous_buyer').waitFor({ timeout: 60000 });
+    await page.getByText('high_value_loyal').waitFor({ timeout: 60000 });
+
+    fs.mkdirSync('test-results', { recursive: true });
+    await page.screenshot({ path: 'test-results/dashboard-e2e.png', fullPage: true });
+    await browser.close();
+
+    console.log('Playwright E2E passed: dashboard funnel, cohort, and segment views rendered.');
+  } catch (error) {
+    console.error('Playwright E2E failed.');
+    console.error(error);
+    if (stdout) console.error('\n--- streamlit stdout ---\n' + stdout);
+    if (stderr) console.error('\n--- streamlit stderr ---\n' + stderr);
+    process.exitCode = 1;
+  } finally {
+    server.kill('SIGTERM');
+  }
+}
+
+main();

@@ -116,6 +116,15 @@ Start here after the metrics are generated:
 - `docs/insight-synthesis.md`
 - `docs/data-dictionary.md`
 
+## E2E Test
+
+Run the final dashboard E2E test with Playwright:
+
+```bash
+PYTHON="python" node tests/e2e/dashboard.spec.cjs
+```
+
+The test starts Streamlit on port `8502`, verifies the funnel, cohort, and segment tabs, and writes an ignored screenshot to `test-results/dashboard-e2e.png`.
 ## Scope Boundaries
 
 Version 1 does not include streaming, multi-dataset joins, predictive ML, or production warehouse orchestration.

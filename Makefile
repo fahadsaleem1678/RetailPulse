@@ -1,6 +1,6 @@
 PYTHON ?= python
 
-.PHONY: install download profile ingest stage sessions metrics pipeline export dashboard
+.PHONY: install download profile ingest stage sessions metrics pipeline export dashboard e2e
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -30,4 +30,6 @@ export:
 
 dashboard:
 	$(PYTHON) -m streamlit run dashboard/app.py
+e2e:
+	PYTHON="$(PYTHON)" node tests/e2e/dashboard.spec.cjs
 

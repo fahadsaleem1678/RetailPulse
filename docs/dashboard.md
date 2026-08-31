@@ -37,7 +37,17 @@ RETAILPULSE_DUCKDB=data/warehouse/retailpulse.duckdb python -m streamlit run das
 - Local health check returned HTTP 200 from `http://localhost:8501`.
 - Dashboard reads from generated DuckDB metric tables; raw CSVs are not scanned at dashboard runtime.
 - Portfolio screenshots were captured under `case-study/images/` for funnel, cohort, and segment views.
+- Final Playwright E2E passed against Streamlit on port `8502`; funnel, cohort, and segment tabs rendered successfully.
 
+## Playwright E2E
+
+Run:
+
+```bash
+PYTHON="python" node tests/e2e/dashboard.spec.cjs
+```
+
+The test starts its own Streamlit process on port `8502` and checks the funnel, cohort, and segment tabs.
 ## Phase 7 Gate
 
 After data is loaded, confirm that:
