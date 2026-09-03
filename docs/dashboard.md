@@ -1,6 +1,6 @@
 # Dashboard
 
-Phase 7 uses Streamlit to expose the generated product analytics summary tables.
+Phase 7 uses Streamlit to expose the generated product analytics summary tables in a dark RetailPulse cockpit UI.
 
 Run the pipeline first:
 
@@ -27,17 +27,17 @@ RETAILPULSE_DUCKDB=data/warehouse/retailpulse.duckdb python -m streamlit run das
 
 ## Views
 
-- Funnel: session-level stage reach, monthly conversion rates, brand/category/price-band tables.
-- Cohorts: activity and purchase retention heatmaps.
-- Segments: RFM segment revenue and user summary.
+- Overview: KPI cards, sales overview, conversion trend, and brand/category/price-band tables.
+- Cohorts: activity and purchase retention heatmaps with cohort detail.
+- Segments: RFM segment revenue, revenue share, and customer-list summary.
 
 ## Validation Results
 
 - Dashboard server started successfully with `python -m streamlit run dashboard/app.py --server.headless true --server.port 8501`.
 - Local health check returned HTTP 200 from `http://localhost:8501`.
 - Dashboard reads from generated DuckDB metric tables; raw CSVs are not scanned at dashboard runtime.
-- Portfolio screenshots were captured under `case-study/images/` for funnel, cohort, and segment views.
-- Final Playwright E2E passed against Streamlit on port `8502`; funnel, cohort, and segment tabs rendered successfully.
+- Portfolio screenshots were captured under `case-study/images/` for overview, cohort, and segment views.
+- Final Playwright E2E passed against Streamlit on port `8502`; overview, cohort, and segment tabs rendered successfully.
 
 ## Playwright E2E
 
@@ -47,13 +47,12 @@ Run:
 PYTHON="python" node tests/e2e/dashboard.spec.cjs
 ```
 
-The test starts its own Streamlit process on port `8502` and checks the funnel, cohort, and segment tabs.
+The test starts its own Streamlit process on port `8502` and checks the overview, cohort, and segment tabs.
 ## Phase 7 Gate
 
 After data is loaded, confirm that:
 
-- The dashboard loads from generated DuckDB summary tables.
+- The dashboard loads from generated DuckDB summary tables with the redesigned dark cockpit styling.
 - Filters do not produce broken charts or divide-by-zero errors.
 - Dashboard values match sampled SQL outputs from `analysis/core_metrics.sql`.
 - Screenshots are readable for the portfolio case study.
-

@@ -77,27 +77,32 @@ async function main() {
 
     await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 60000 });
     await page.getByText('RetailPulse', { exact: true }).waitFor({ timeout: 60000 });
-    await page.getByText('Cosmetics ecommerce product analytics').waitFor({ timeout: 60000 });
-    await page.getByText('Viewed sessions').waitFor({ timeout: 60000 });
-    await page.getByText('4,280,701').waitFor({ timeout: 60000 });
-    await page.getByText('18.42%').first().waitFor({ timeout: 60000 });
-    await page.getByText('$6,351,830').waitFor({ timeout: 60000 });
-    await page.getByText('Session funnel stage reach').waitFor({ timeout: 60000 });
+    await page.getByText('Cosmetics ecommerce intelligence cockpit').waitFor({ timeout: 60000 });
+
+    const kpiCards = page.locator('.rp-kpi-card');
+    await kpiCards.filter({ hasText: 'Net purchase revenue' }).locator('.rp-kpi-value').filter({ hasText: '$6,351,830' }).waitFor({ timeout: 60000 });
+    await kpiCards.filter({ hasText: 'Viewed sessions' }).locator('.rp-kpi-value').filter({ hasText: '4,280,701' }).waitFor({ timeout: 60000 });
+    await kpiCards.filter({ hasText: 'View to cart' }).locator('.rp-kpi-value').filter({ hasText: '18.42%' }).waitFor({ timeout: 60000 });
+    await page.getByText('Sales Overview').waitFor({ timeout: 60000 });
+    await page.getByText('Conversion Trend').waitFor({ timeout: 60000 });
 
     await page.getByRole('tab', { name: 'Cohorts' }).click();
-    await page.getByText('Activity retention by first activity month').waitFor({ timeout: 60000 });
-    await page.getByText('Purchase retention by first purchase month').waitFor({ timeout: 60000 });
+    await page.getByText('Activity Retention', { exact: true }).waitFor({ timeout: 60000 });
+    await page.getByText('Purchase Retention', { exact: true }).waitFor({ timeout: 60000 });
+    await page.getByText('Cohort Detail').waitFor({ timeout: 60000 });
 
     await page.getByRole('tab', { name: 'Segments' }).click();
-    await page.getByText('Revenue by purchasing-user segment').waitFor({ timeout: 60000 });
-    await page.getByText('at_risk_previous_buyer').waitFor({ timeout: 60000 });
-    await page.getByText('high_value_loyal').waitFor({ timeout: 60000 });
+    await page.getByText('Revenue by Segment').waitFor({ timeout: 60000 });
+    await page.getByText('Revenue Share').waitFor({ timeout: 60000 });
+    await page.getByText('Customer List').waitFor({ timeout: 60000 });
+    await page.getByText('at_risk_previous_buyer').first().waitFor({ timeout: 60000 });
+    await page.getByText('high_value_loyal').first().waitFor({ timeout: 60000 });
 
     fs.mkdirSync('test-results', { recursive: true });
     await page.screenshot({ path: 'test-results/dashboard-e2e.png', fullPage: true });
     await browser.close();
 
-    console.log('Playwright E2E passed: dashboard funnel, cohort, and segment views rendered.');
+    console.log('Playwright E2E passed: dashboard overview, cohort, and segment views rendered.');
   } catch (error) {
     console.error('Playwright E2E failed.');
     console.error(error);
