@@ -1,7 +1,7 @@
 """RetailPulse Streamlit dashboard.
 
-The dashboard reads generated summary tables from DuckDB. It does not scan raw
-CSV files; run the pipeline first to create the metric tables.
+The dashboard prefers generated summary tables from DuckDB for local analysis and
+falls back to committed CSV metric exports for hosted portfolio deployments.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ import streamlit as st
 
 
 DEFAULT_DB_PATH = Path("data/warehouse/retailpulse.duckdb")
+DEFAULT_EXPORTS_PATH = Path("data/exports")
 REQUIRED_TABLES = [
     "metric_session_funnel_overall",
     "metric_session_funnel_by_month",
@@ -45,13 +46,22 @@ def connect(db_path: str) -> duckdb.DuckDBPyConnection:
 
 
 @st.cache_data
-def read_table(db_path: str, table_name: str) -> pd.DataFrame:
+def read_duckdb_table(db_path: str, table_name: str) -> pd.DataFrame:
     con = connect(db_path)
     return con.execute(f"SELECT * FROM {table_name}").fetchdf()
 
 
+@st.cache_data
+def read_export_table(metric_exports_path: str, table_name: str) -> pd.DataFrame:
+    return pd.read_csv(Path(metric_exports_path) / f"{table_name}.csv")
+
+
 def database_path() -> Path:
     return Path(os.environ.get("RETAILPULSE_DUCKDB", DEFAULT_DB_PATH))
+
+
+def exports_path() -> Path:
+    return Path(os.environ.get("RETAILPULSE_EXPORTS_DIR", DEFAULT_EXPORTS_PATH))
 
 
 def available_tables(db_path: Path) -> set[str]:
@@ -60,28 +70,41 @@ def available_tables(db_path: Path) -> set[str]:
     return {row[0] for row in rows}
 
 
-def stop_if_not_ready(db_path: Path) -> None:
-    if not db_path.exists():
-        st.info("Run the pipeline before opening the dashboard.")
-        st.code(
-            "\n".join(
-                [
-                    "python scripts/ingest_raw_events.py",
-                    "python scripts/run_duckdb_sql.py sql/03_staging_quality.sql",
-                    "python scripts/run_duckdb_sql.py sql/04_session_mart.sql",
-                    "python scripts/run_duckdb_sql.py analysis/core_metrics.sql",
-                ]
-            ),
-            language="bash",
-        )
-        st.stop()
+def missing_export_files(metric_exports_path: Path) -> list[str]:
+    return [f"{table_name}.csv" for table_name in REQUIRED_TABLES if not (metric_exports_path / f"{table_name}.csv").exists()]
 
-    missing = sorted(set(REQUIRED_TABLES) - available_tables(db_path))
-    if missing:
-        st.info("Metric tables are missing. Run the analytics SQL before opening the dashboard.")
-        st.write(missing)
-        st.code("python scripts/run_duckdb_sql.py analysis/core_metrics.sql", language="bash")
-        st.stop()
+
+def load_metric_tables(db_path: Path, metric_exports_path: Path) -> tuple[dict[str, pd.DataFrame], str]:
+    if db_path.exists():
+        try:
+            missing_tables = sorted(set(REQUIRED_TABLES) - available_tables(db_path))
+            if not missing_tables:
+                tables = {table_name: read_duckdb_table(str(db_path), table_name) for table_name in REQUIRED_TABLES}
+                return tables, f"DuckDB warehouse: {db_path}"
+            st.warning(f"DuckDB warehouse is missing metric tables: {', '.join(missing_tables)}. Trying CSV exports.")
+        except duckdb.Error as error:
+            st.warning(f"DuckDB warehouse could not be opened: {error}. Trying CSV exports.")
+
+    missing_exports = missing_export_files(metric_exports_path)
+    if not missing_exports:
+        tables = {table_name: read_export_table(str(metric_exports_path), table_name) for table_name in REQUIRED_TABLES}
+        return tables, f"CSV metric exports: {metric_exports_path}"
+
+    st.info("Run the pipeline before opening the dashboard, or keep the committed CSV metric exports available for deployment.")
+    st.write("Missing CSV exports:", missing_exports)
+    st.code(
+        "\n".join(
+            [
+                "python scripts/ingest_raw_events.py",
+                "python scripts/run_duckdb_sql.py sql/03_staging_quality.sql",
+                "python scripts/run_duckdb_sql.py sql/04_session_mart.sql",
+                "python scripts/run_duckdb_sql.py analysis/core_metrics.sql",
+                "python scripts/export_metric_tables.py",
+            ]
+        ),
+        language="bash",
+    )
+    st.stop()
 
 
 def inject_css() -> None:
@@ -340,11 +363,11 @@ def render_topbar(overall: pd.Series, latest_month: str) -> None:
     )
 
 
-def render_sidebar(db_path: Path, funnel_month: pd.DataFrame, funnel_brand: pd.DataFrame, funnel_category: pd.DataFrame, funnel_price: pd.DataFrame):
+def render_sidebar(source_label: str, funnel_month: pd.DataFrame, funnel_brand: pd.DataFrame, funnel_category: pd.DataFrame, funnel_price: pd.DataFrame):
     st.sidebar.markdown("<div class='rp-section-label'>Workspace</div>", unsafe_allow_html=True)
     st.sidebar.markdown("**RetailPulse Analytics**")
-    st.sidebar.caption("DuckDB summary tables")
-    st.sidebar.markdown(f"`{db_path}`")
+    st.sidebar.caption("Generated summary metrics")
+    st.sidebar.markdown(f"`{source_label}`")
     st.sidebar.markdown("<div class='rp-section-label'>Filters</div>", unsafe_allow_html=True)
     month_options = pd.to_datetime(funnel_month["session_month"]).dt.strftime("%Y-%m").tolist()
     selected_months = st.sidebar.multiselect("Month", options=month_options)
@@ -520,21 +543,21 @@ def render_segment_tab(segment_summary: pd.DataFrame) -> None:
 def main() -> None:
     inject_css()
     db_path = database_path()
-    stop_if_not_ready(db_path)
+    metric_exports_path = exports_path()
+    tables, source_label = load_metric_tables(db_path, metric_exports_path)
 
-    funnel_overall = read_table(str(db_path), "metric_session_funnel_overall")
-    funnel_month = read_table(str(db_path), "metric_session_funnel_by_month")
-    funnel_brand = read_table(str(db_path), "metric_session_funnel_by_brand")
-    funnel_category = read_table(str(db_path), "metric_session_funnel_by_category")
-    funnel_price = read_table(str(db_path), "metric_session_funnel_by_price_band")
-    activity_cohort = read_table(str(db_path), "metric_activity_cohort_retention")
-    purchase_cohort = read_table(str(db_path), "metric_purchase_cohort_retention")
-    segment_summary = read_table(str(db_path), "metric_rfm_segment_summary")
+    funnel_overall = tables["metric_session_funnel_overall"]
+    funnel_month = tables["metric_session_funnel_by_month"]
+    funnel_brand = tables["metric_session_funnel_by_brand"]
+    funnel_category = tables["metric_session_funnel_by_category"]
+    funnel_price = tables["metric_session_funnel_by_price_band"]
+    activity_cohort = tables["metric_activity_cohort_retention"]
+    purchase_cohort = tables["metric_purchase_cohort_retention"]
+    segment_summary = tables["metric_rfm_segment_summary"]
 
     selected_months, selected_brands, selected_categories, selected_price_bands = render_sidebar(
-        db_path, funnel_month, funnel_brand, funnel_category, funnel_price
+        source_label, funnel_month, funnel_brand, funnel_category, funnel_price
     )
-
     overall = funnel_overall.iloc[0]
     latest_month = pd.to_datetime(funnel_month["session_month"]).max().strftime("%b %Y")
     render_topbar(overall, latest_month)

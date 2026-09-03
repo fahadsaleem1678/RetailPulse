@@ -1,8 +1,8 @@
 # Dashboard
 
-Phase 7 uses Streamlit to expose the generated product analytics summary tables in a dark RetailPulse cockpit UI.
+Phase 7 uses Streamlit to expose the generated product analytics summary tables in a dark RetailPulse cockpit UI. It prefers the local DuckDB warehouse and falls back to committed CSV metric exports for hosted deployments.
 
-Run the pipeline first:
+For the local DuckDB workflow, run the pipeline first:
 
 ```bash
 python scripts/ingest_raw_events.py
@@ -11,7 +11,7 @@ python scripts/run_duckdb_sql.py sql/04_session_mart.sql
 python scripts/run_duckdb_sql.py analysis/core_metrics.sql
 ```
 
-Start the dashboard after the pipeline has finished. Close the Streamlit dashboard before rerunning pipeline steps that write to DuckDB; DuckDB allows one writer at a time.
+Start the dashboard after the pipeline has finished. Close the Streamlit dashboard before rerunning pipeline steps that write to DuckDB; DuckDB allows one writer at a time. If the DuckDB warehouse is unavailable, the dashboard loads the tracked CSV exports from `data/exports/`.
 
 Start the dashboard:
 
@@ -35,9 +35,20 @@ RETAILPULSE_DUCKDB=data/warehouse/retailpulse.duckdb python -m streamlit run das
 
 - Dashboard server started successfully with `python -m streamlit run dashboard/app.py --server.headless true --server.port 8501`.
 - Local health check returned HTTP 200 from `http://localhost:8501`.
-- Dashboard reads from generated DuckDB metric tables; raw CSVs are not scanned at dashboard runtime.
+- Dashboard reads from generated DuckDB metric tables locally and falls back to tracked metric CSV exports for hosted deployment; raw event CSVs are not scanned at dashboard runtime.
 - Portfolio screenshots were captured under `case-study/images/` for overview, cohort, and segment views.
 - Final Playwright E2E passed against Streamlit on port `8502`; overview, cohort, and segment tabs rendered successfully.
+
+
+## Streamlit Cloud Deployment
+
+Use these settings when creating the app:
+
+- Repository: `fahadsaleem1678/RetailPulse`
+- Branch: `main`
+- Main file path: `dashboard/app.py`
+
+No secrets are required for the portfolio dashboard. The deployed app uses the committed `data/exports/*.csv` files when `data/warehouse/retailpulse.duckdb` is not present.
 
 ## Playwright E2E
 

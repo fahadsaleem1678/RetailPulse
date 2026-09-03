@@ -106,7 +106,16 @@ Segmentation uses purchasing users only:
 python -m streamlit run dashboard/app.py
 ```
 
-The dashboard reads generated DuckDB summary tables and does not scan raw CSV files.
+The dashboard prefers the local DuckDB summary tables and falls back to the tracked `data/exports/*.csv` metric files. That keeps local analysis fast while letting Streamlit Cloud render without committing the 2.4 GB warehouse.
+### Streamlit Cloud Deployment
+
+Use these settings on Streamlit Community Cloud:
+
+- Repository: `fahadsaleem1678/RetailPulse`
+- Branch: `main`
+- Main file path: `dashboard/app.py`
+
+The app can deploy directly from GitHub because the small metric CSV exports are committed. The raw Kaggle archive, raw CSVs, processed Parquet files, and DuckDB warehouse remain local-only artifacts.
 
 ## Case Study
 

@@ -26,6 +26,17 @@ function fileExists(filePath) {
   return fs.existsSync(path.resolve(filePath));
 }
 
+const requiredMetricExports = [
+  'metric_session_funnel_overall',
+  'metric_session_funnel_by_month',
+  'metric_session_funnel_by_brand',
+  'metric_session_funnel_by_category',
+  'metric_session_funnel_by_price_band',
+  'metric_activity_cohort_retention',
+  'metric_purchase_cohort_retention',
+  'metric_rfm_segment_summary',
+];
+
 async function waitForUrl(url, timeoutMs = 60000) {
   const startedAt = Date.now();
   let lastError;
@@ -51,8 +62,11 @@ async function main() {
   const edgePath = process.env.EDGE_PATH || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 
   assert.ok(fileExists('dashboard/app.py'), 'dashboard/app.py should exist');
-  assert.ok(fileExists('data/warehouse/retailpulse.duckdb'), 'DuckDB warehouse should exist');
-  assert.ok(fileExists('data/exports/metric_session_funnel_overall.csv'), 'metric exports should exist');
+  for (const tableName of requiredMetricExports) {
+    const exportPath = path.join('data', 'exports', tableName + '.csv');
+    assert.ok(fileExists(exportPath), tableName + '.csv should exist');
+  }
+  const expectsCsvFallback = process.env.RETAILPULSE_DUCKDB && !fileExists(process.env.RETAILPULSE_DUCKDB);
 
   const server = spawn(
     python,
@@ -78,6 +92,9 @@ async function main() {
     await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 60000 });
     await page.getByText('RetailPulse', { exact: true }).waitFor({ timeout: 60000 });
     await page.getByText('Cosmetics ecommerce intelligence cockpit').waitFor({ timeout: 60000 });
+    if (expectsCsvFallback) {
+      await page.getByText('CSV metric exports').waitFor({ timeout: 60000 });
+    }
 
     const kpiCards = page.locator('.rp-kpi-card');
     await kpiCards.filter({ hasText: 'Net purchase revenue' }).locator('.rp-kpi-value').filter({ hasText: '$6,351,830' }).waitFor({ timeout: 60000 });
